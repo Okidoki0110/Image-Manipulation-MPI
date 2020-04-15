@@ -1,6 +1,6 @@
-============================        Tema 3 APD       ==================================
 
 Programul citește imaginea de intrare (tot fișierul ) complet în memorie.
+   
     std::ifstream input_image;
     input_image.open(argv[1], std::ios::binary);
     if (!input_image.is_open()) { /* eroare */ }
@@ -21,6 +21,7 @@ Observație: fișierele .pnm/.pgm pot conține comentarii în structura lor, ime
 Acest lucru nu este specificat in enuțul temei.
 
 Se creează o imagine bordată cu două rânduri (sus și jos) cu 0.
+
     int bytes_per_row = image_width * (image_bw ? 1 : 3);
 
     int padded_image_size = bytes_per_row * (image_height + 2);
@@ -35,11 +36,12 @@ Se creează o imagine bordată cu două rânduri (sus și jos) cu 0.
     memset(padded_image_buffer + (bytes_per_row * image_height) + bytes_per_row, 0, bytes_per_row); 
 
 padded_image_buffer este un pointer care contine noua imagine bordată, iar image_buffer este pointerul către imaginea originală.
-După bordare se poate elibera memorie ocupată de imaginea inițială. ( delete[] image_file_buffer; )
+După bordare se poate elibera memorie ocupată de imaginea inițială. ```( delete[] image_file_buffer; )```
 
 
 Distribuirea imaginii se face pe procesul cu rank 0.
 Se calculează numărul de rânduri care revine fiecărui proces.
+
     int rows_per_thread = image_height / NThreads;
     int part_image_size = rows_per_thread * bytes_per_row;
 
@@ -51,6 +53,7 @@ Dacă se rulează programul cu un singur proces, atunci toată imaginea va apar�
 
 
 Când se împarte imaginea, fiecare proces primește două rânduri de pixeli în plus:
+
 - rândul superior aparține procesului anterior (thread_id - 1), dar avem nevoie de el pentru a calcula corect filtrele.
 - rândul inferior aparține procesului următor (sau procesului cu rank0 dacă procesul actual are rank-ul NThreads-1; (thread_id + 1)%NThreads )
 
@@ -80,10 +83,11 @@ După aplicarea ultimului filtru nu se mai face comunicarea rândurilor comune p
 
 
 După ce a terminat de aplicat fiecare filtru, procesele trimit partea lor de imagine înapoi la procesul cu rank 0.
-  MPI_Send(input_image_part + bytes_per_row, working_image_size - 2 * bytes_per_row, MPI_BYTE, 0, 0, MPI_COMM_WORLD);
+```  MPI_Send(input_image_part + bytes_per_row, working_image_size - 2 * bytes_per_row, MPI_BYTE, 0, 0, MPI_COMM_WORLD);```
 
 
 Acesta reconstituie imaginea finală și o salvează în fișierul argv[2].
+```
    if (NThreads > 1) {
       for (int i = 1; i < NThreads; i++) {
         MPI_Recv(image_buffer + bytes_per_row + ((i - 1) * rows_per_thread * bytes_per_row), rows_per_thread * bytes_per_row, MPI_BYTE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -112,8 +116,8 @@ Acesta reconstituie imaginea finală și o salvează în fișierul argv[2].
     output_image_file.close();
 
 
+```
 
-=========================================================================================================================================
 Programul a fost testat și corespunde cu cerințele.
 Imaginea finală este corectă indiferent de numărul de thread-uri și programul poate scala.
 
@@ -126,10 +130,11 @@ iar dacă rezultatul va avea valoare mai mare de 255 atunci funcția va întroar
 
 Rezultatele programului sunt deterministice și repetabile de la o rulare la alta.
 Nu sunt probleme de comunicare, rânduri diferite etc.
-==========================================================================================================================================
+
 
 
 Pentru a măsura scalabilitatea s-au folosit imagni de următoarele dimensiuni:
+
   - landscape.pnm (3840x2160) ; cea mai mare imagine color care face parte din exemple
   - rorschach.pgm (3853x2000) ; cea mai mare imagine alb-negru din exemple	
 
